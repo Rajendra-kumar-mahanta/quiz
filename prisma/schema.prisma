@@ -1,0 +1,184 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String         @id @default(uuid())
+  email        String         @unique
+  passwordHash String
+  name         String
+  role         String         @default("ADMIN") // ADMIN, SUPERADMIN
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  auditLogs    AdminAuditLog[]
+}
+
+model Quiz {
+  id                          String         @id @default(uuid())
+  title                       String
+  description                 String?
+  subject                     String?        @default("Robotics & Arduino")
+  coverImage                  String?
+  defaultDuration             Int            @default(30) // seconds
+  baseMarks                   Int            @default(10)
+  maxBonus                    Int            @default(10)
+  negativeMarking             Boolean        @default(false)
+  negativeMarks               Float          @default(0)
+  shuffleQuestions            Boolean        @default(false)
+  shuffleOptions              Boolean        @default(false)
+  showAnswerAfterQuestion     Boolean        @default(true)
+  showLeaderboardAfterQuestion Boolean       @default(true)
+  allowLateJoin               Boolean        @default(true)
+  showPersonalScore           Boolean        @default(true)
+  scheduledStartTime          DateTime?
+  maxParticipants             Int?           @default(500)
+  instructions                String?
+  isArchived                  Boolean        @default(false)
+  createdAt                   DateTime       @default(now())
+  updatedAt                   DateTime       @updatedAt
+  questions                   Question[]
+  sessions                    QuizSession[]
+}
+
+model Question {
+  id           String         @id @default(uuid())
+  quizId       String
+  quiz         Quiz           @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  text         String
+  codeSnippet  String?
+  image        String?
+  type         String         @default("MCQ_SINGLE") // MCQ_SINGLE, MCQ_MULTIPLE, TRUE_FALSE
+  explanation  String?
+  difficulty   String         @default("BEGINNER") // BEGINNER, INTERMEDIATE, ADVANCED
+  category     String?        @default("General")
+  points       Int            @default(10)
+  duration     Int            @default(30)
+  displayOrder Int            @default(0)
+  status       String         @default("ACTIVE") // ACTIVE, DRAFT
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  options      AnswerOption[]
+
+  @@index([quizId])
+}
+
+model AnswerOption {
+  id          String    @id @default(uuid())
+  questionId  String
+  question    Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text        String
+  isCorrect   Boolean   @default(false)
+  order       Int       @default(0)
+  explanation String?
+
+  @@index([questionId])
+}
+
+model QuizSession {
+  id                         String                @id @default(uuid())
+  sessionCode                String                @unique
+  quizId                     String
+  quiz                       Quiz                  @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  title                      String
+  status                     String                @default("CREATED") // CREATED, WAITING_ROOM, ACTIVE_QUESTION, QUESTION_CLOSED, SHOW_LEADERBOARD, COMPLETED, CANCELLED
+  currentQuestionIndex       Int                   @default(-1)
+  currentQuestionStartedAt   DateTime?
+  currentQuestionDeadline    DateTime?
+  joinPin                    String?
+  allowLateJoin              Boolean               @default(true)
+  isLive                     Boolean               @default(false)
+  startedAt                  DateTime?
+  endedAt                    DateTime?
+  createdAt                  DateTime              @default(now())
+  updatedAt                  DateTime              @updatedAt
+  sessionQuestions           SessionQuestion[]
+  participants               Participant[]
+  responses                  ParticipantResponse[]
+
+  @@index([sessionCode])
+  @@index([quizId])
+}
+
+model SessionQuestion {
+  id            String                @id @default(uuid())
+  sessionId     String
+  session       QuizSession           @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  questionId    String
+  questionOrder Int
+  snapshotData  String                // Full JSON snapshot of the question & options at launch time
+  startedAt     DateTime?
+  endedAt       DateTime?
+  isClosed      Boolean               @default(false)
+  responses     ParticipantResponse[]
+
+  @@index([sessionId])
+}
+
+model Participant {
+  id                     String                @id @default(uuid())
+  sessionId              String
+  session                QuizSession           @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  name                   String
+  rollNumber             String?
+  department             String?
+  institution            String?
+  email                  String?
+  sessionToken           String                @unique
+  isConnected            Boolean               @default(true)
+  socketId               String?
+  totalScore             Int                   @default(0)
+  totalBonus             Int                   @default(0)
+  correctCount           Int                   @default(0)
+  incorrectCount         Int                   @default(0)
+  unansweredCount        Int                   @default(0)
+  totalResponseTimeMs    Int                   @default(0)
+  averageResponseTimeMs  Int                   @default(0)
+  finalRank              Int                   @default(0)
+  joinedAt               DateTime              @default(now())
+  lastSeenAt             DateTime              @default(now())
+  responses              ParticipantResponse[]
+
+  @@index([sessionId])
+  @@index([sessionToken])
+}
+
+model ParticipantResponse {
+  id                 String          @id @default(uuid())
+  sessionId          String
+  session            QuizSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  participantId      String
+  participant        Participant     @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  questionId         String
+  sessionQuestionId  String
+  sessionQuestion    SessionQuestion @relation(fields: [sessionQuestionId], references: [id], onDelete: Cascade)
+  selectedOptionIds  String          // JSON array of selected option IDs
+  isCorrect          Boolean         @default(false)
+  baseMarks          Int             @default(0)
+  speedBonus         Int             @default(0)
+  totalMarks         Int             @default(0)
+  responseTimeMs     Int             @default(0)
+  serverReceivedAt   DateTime        @default(now())
+  clientSubmittedAt  DateTime?
+  status             String          @default("SUBMITTED") // SUBMITTED, TIMEOUT, DISQUALIFIED
+
+  @@unique([sessionId, participantId, sessionQuestionId])
+  @@index([sessionId])
+  @@index([participantId])
+  @@index([sessionQuestionId])
+}
+
+model AdminAuditLog {
+  id         String   @id @default(uuid())
+  adminId    String?
+  admin      User?    @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  action     String
+  targetType String
+  targetId   String?
+  details    String?
+  createdAt  DateTime @default(now())
+}

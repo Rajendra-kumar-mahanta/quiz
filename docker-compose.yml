@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  roboquest:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: roboquest_quiz
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=file:/app/prisma/dev.db
+      - JWT_SECRET=roboquest_super_secret_jwt_key_2026_production_grade
+      - ADMIN_DEFAULT_EMAIL=rajendrakumarmahanta22@gmail.com
+      - ADMIN_DEFAULT_PASSWORD=admin123
+    volumes:
+      - roboquest_data:/app/prisma
+
+volumes:
+  roboquest_data:
