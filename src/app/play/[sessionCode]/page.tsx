@@ -438,12 +438,7 @@ export default function PlayQuizPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {currentQuestion.options?.map((option: any, idx: number) => {
                 const isSelected = selectedOptionIds.includes(option.id);
-                let cardStyle = 'border-white/10 bg-surface-dark/80 text-gray-200 hover:border-cyber-cyan hover:bg-surface/90 hover:shadow-[0_0_20px_rgba(0,217,255,0.3)]';
                 let indicatorLetter = String.fromCharCode(65 + idx);
-
-                if (isSelected) {
-                  cardStyle = 'border-cyber-cyan bg-cyber-cyan/25 text-white shadow-[0_0_25px_rgba(0,217,255,0.6)] font-bold';
-                }
 
                 return (
                   <button
@@ -457,7 +452,11 @@ export default function PlayQuizPage() {
                         handleDirectSingleSubmit(option.id);
                       }
                     }}
-                    className={`p-4 sm:p-5 rounded-2xl border text-left transition-all flex items-center gap-4 active:scale-[0.97] disabled:pointer-events-none ${cardStyle}`}
+                    className={`p-4 sm:p-5 rounded-2xl border text-left transition-all flex items-center gap-4 active:scale-[0.97] disabled:pointer-events-none touch-manipulation select-none outline-none focus:outline-none ${
+                      isSelected
+                        ? 'border-cyber-cyan bg-cyber-cyan/25 text-white shadow-[0_0_25px_rgba(0,217,255,0.6)] font-bold ring-2 ring-cyber-cyan'
+                        : 'border-white/10 bg-surface-dark/80 text-gray-200'
+                    }`}
                   >
                     <span
                       className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm flex-shrink-0 transition-all ${
