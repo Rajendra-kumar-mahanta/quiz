@@ -718,7 +718,7 @@ export default function PlayQuizPage() {
               )}
             </div>
 
-            {/* 4. BOTTOM COUNTDOWN TRANSITION HUD / PAUSED STATUS */}
+            {/* 4. BOTTOM REVIEW PROGRESS BAR / PAUSED STATUS */}
             <div
               className={`p-2.5 sm:p-3 rounded-2xl border text-center relative overflow-hidden transition-all ${
                 isPaused
@@ -733,35 +733,72 @@ export default function PlayQuizPage() {
                     SESSION PAUSED BY HOST • REVIEW STANDINGS
                   </span>
                 </div>
-              ) : reviewRemaining > 5 ? (
+              ) : (
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-center gap-2 text-cyber-cyan font-mono font-bold text-[11px] uppercase tracking-wider">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyber-cyan animate-ping" />
-                    <span>Reviewing Standings & Speed Bonuses</span>
+                  <div className="flex items-center justify-between px-2 text-cyber-cyan font-mono font-bold text-[11px] uppercase tracking-wider">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyber-cyan animate-ping" />
+                      <span>Round Review</span>
+                    </span>
+                    <span className="text-gray-400 font-normal">
+                      Next question countdown in {Math.max(0, reviewRemaining - 5)}s
+                    </span>
                   </div>
-                  <div className="w-full bg-surface-dark rounded-full h-1 overflow-hidden border border-white/10 max-w-sm mx-auto">
+                  <div className="w-full bg-surface-dark rounded-full h-1.5 overflow-hidden border border-white/10 max-w-md mx-auto">
                     <div
                       className="h-full bg-gradient-to-r from-cyber-cyan to-cyber-violet transition-all duration-1000"
-                      style={{ width: `${((10 - reviewRemaining) / 5) * 100}%` }}
+                      style={{ width: `${Math.min(100, Math.max(0, ((10 - reviewRemaining) / 5) * 100))}%` }}
                     />
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center gap-3">
-                  <span className="text-xs font-mono font-black uppercase tracking-wider text-cyber-amber flex items-center gap-1.5">
-                    <Zap className="w-3.5 h-3.5 text-cyber-amber animate-bounce" />
-                    {questionFeedback?.isLastQuestion
-                      ? 'FINAL PODIUM REVEAL IN'
-                      : `NEXT QUESTION #${currentQuestion ? currentQuestion.index + 2 : 2} IN`}
-                  </span>
-
-                  {/* Pulsating 5-to-1 Digital Number */}
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyber-cyan via-blue-500 to-cyber-violet flex items-center justify-center text-surface-dark font-mono font-black text-lg shadow-[0_0_15px_rgba(0,217,255,0.8)] animate-pulse">
-                    {Math.max(1, reviewRemaining)}
                   </div>
                 </div>
               )}
             </div>
+
+            {/* 5. FULLSCREEN 5-TO-1 COUNTDOWN POPUP MODAL (OPENS AFTER 5 SECONDS OF REVIEW) */}
+            {!isPaused && reviewRemaining <= 5 && reviewRemaining > 0 && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl animate-fade-in">
+                <div className="relative max-w-sm w-full p-8 rounded-3xl bg-gradient-to-b from-[#091833] via-[#050e1f] to-[#020611] border-2 border-cyber-cyan/60 text-center shadow-[0_0_60px_rgba(0,217,255,0.4)] flex flex-col items-center justify-center overflow-hidden">
+                  
+                  {/* Ambient Glows */}
+                  <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-48 h-48 bg-cyber-cyan/30 rounded-full blur-3xl pointer-events-none" />
+                  <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-48 h-48 bg-cyber-violet/30 rounded-full blur-3xl pointer-events-none" />
+
+                  {/* Header Badge */}
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyber-amber/15 border border-cyber-amber/40 text-cyber-amber text-xs font-mono font-black uppercase tracking-wider mb-4 shadow-[0_0_15px_rgba(245,158,11,0.3)]">
+                    <Zap className="w-3.5 h-3.5 text-cyber-amber animate-bounce" />
+                    <span>
+                      {questionFeedback?.isLastQuestion
+                        ? 'FINAL PODIUM REVEAL'
+                        : `GET READY FOR QUESTION #${currentQuestion ? currentQuestion.index + 2 : 2}`}
+                    </span>
+                  </div>
+
+                  <h3 className="text-xl sm:text-2xl font-black text-white mb-2 tracking-tight">
+                    {questionFeedback?.isLastQuestion
+                      ? 'Tournament Concluded!'
+                      : 'Next Round Starting!'}
+                  </h3>
+                  
+                  <p className="text-xs text-gray-300 mb-6 font-light max-w-xs leading-relaxed">
+                    Lock in your response quickly in the next question for maximum speed bonus points.
+                  </p>
+
+                  {/* Huge Animated 5-to-1 Pulsating Countdown Dial */}
+                  <div className="relative w-28 h-28 flex items-center justify-center my-2">
+                    <div className="absolute inset-0 rounded-full border-4 border-cyber-cyan/30 animate-ping opacity-30" />
+                    <div className="absolute inset-1 rounded-full border-2 border-cyber-cyan/60 animate-pulse shadow-[0_0_30px_rgba(0,217,255,0.6)]" />
+                    <div className="w-22 h-22 rounded-2xl bg-gradient-to-tr from-cyber-cyan via-blue-500 to-cyber-violet flex items-center justify-center text-surface-dark font-mono font-black text-5xl shadow-[0_0_40px_rgba(0,217,255,0.9)] transform transition-transform duration-300 scale-110">
+                      {Math.max(1, reviewRemaining)}
+                    </div>
+                  </div>
+
+                  <div className="mt-6 text-[11px] font-mono text-cyber-cyan font-bold tracking-widest uppercase flex items-center justify-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-cyber-green animate-ping" />
+                    <span>LAUNCHING NEXT QUESTION...</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
