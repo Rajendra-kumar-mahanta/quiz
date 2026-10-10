@@ -46,4 +46,4 @@ USER nextjs
 
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["sh", "-c", "npx prisma db push && node prisma/seed.js && exec node server.js"]
